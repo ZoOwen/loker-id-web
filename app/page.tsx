@@ -4,7 +4,7 @@ import { createLoader } from "nuqs/server";
 import { JobExplorer } from "@/components/job-explorer";
 import { getJobs, getStats } from "@/lib/api";
 import { jobFiltersParsers } from "@/lib/job-filters-parsers";
-import { slugifyStack } from "@/lib/stack-slug";
+import { stackNameToSlug } from "@/lib/stack-slugs";
 
 // searchParams already forces this route to render per-request (see below),
 // but pin it explicitly so a future refactor can't accidentally make the
@@ -70,7 +70,7 @@ export default async function Home({
                   {topStack.map((s) => (
                     <Link
                       key={s.stack}
-                      href={`/stack/${slugifyStack(s.stack)}`}
+                      href={`/stack/${stackNameToSlug(s.stack)}`}
                       className="rounded-full border border-border px-2 py-0.5 text-xs hover:border-foreground/30 hover:bg-muted/40"
                     >
                       {s.stack} · {s.count}

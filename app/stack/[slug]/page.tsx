@@ -6,7 +6,11 @@ import { SlidersHorizontal } from "lucide-react";
 import { StackJobList } from "@/components/stack-job-list";
 import { getJobs, getStats } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
-import { findStackBySlug, slugifyStack } from "@/lib/stack-slug";
+import {
+  findStackBySlug,
+  stackDisplayName,
+  stackNameToSlug,
+} from "@/lib/stack-slugs";
 
 // Stack pages are pre-rendered at build time for every known stack
 // (generateStaticParams below) and then revalidated hourly. Full static
@@ -19,7 +23,7 @@ export async function generateStaticParams() {
   const statsResult = await getStats({ revalidate });
   if (statsResult.status !== "ok") return [];
   return statsResult.data.by_stack.map((s) => ({
-    slug: slugifyStack(s.stack),
+    slug: stackNameToSlug(s.stack),
   }));
 }
 
@@ -39,8 +43,9 @@ export async function generateMetadata({
 
   if (!stack) return { title: "Teknologi tidak ditemukan" };
 
-  const title = `Lowongan ${stack.stack} Indonesia — ${stack.count} loker aktif`;
-  const description = `Kumpulan lowongan kerja ${stack.stack} di Indonesia dari berbagai sumber. ${stack.count} loker aktif saat ini, diperbarui otomatis.`;
+  const displayName = stackDisplayName(stack.stack);
+  const title = `Lowongan ${displayName} Indonesia — ${stack.count} loker aktif`;
+  const description = `Kumpulan lowongan kerja ${displayName} di Indonesia dari berbagai sumber. ${stack.count} loker aktif saat ini, diperbarui otomatis.`;
   const url = `${SITE_URL}/stack/${slug}`;
 
   return {
@@ -67,6 +72,7 @@ export default async function StackPage({
 
   if (!stack) notFound();
 
+  const displayName = stackDisplayName(stack.stack);
   const { jobs, next_cursor } = await getJobs(
     { stack: [stack.stack] },
     { revalidate }
@@ -76,10 +82,10 @@ export default async function StackPage({
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Lowongan {stack.stack} Indonesia
+          Lowongan {displayName} Indonesia
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {stack.count} loker aktif yang membutuhkan {stack.stack}.
+          {stack.count} loker aktif yang membutuhkan {displayName}.
         </p>
       </div>
 

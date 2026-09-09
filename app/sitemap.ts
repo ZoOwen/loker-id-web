@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getAllJobs, getStats } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
-import { slugifyStack } from "@/lib/stack-slug";
+import { stackNameToSlug } from "@/lib/stack-slugs";
 
 // Job data changes as the scrape cron re-runs, so this must never be a
 // stale static snapshot — force it dynamic on top of the no-store fetches.
@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const stackEntries: MetadataRoute.Sitemap =
     statsResult.status === "ok"
       ? statsResult.data.by_stack.map((s) => ({
-          url: `${SITE_URL}/stack/${slugifyStack(s.stack)}`,
+          url: `${SITE_URL}/stack/${stackNameToSlug(s.stack)}`,
           changeFrequency: "hourly",
           priority: 0.7,
         }))
