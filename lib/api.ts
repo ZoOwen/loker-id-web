@@ -5,7 +5,7 @@ import type {
   JobsResponse,
   SourceStat,
   StackStat,
-  StatsResponse,
+  StatsResult,
 } from "@/lib/types";
 
 export const API_BASE_URL =
@@ -97,34 +97,44 @@ export async function getJob(id: string): Promise<JobDetail | null> {
   };
 }
 
-export async function getStats(): Promise<StatsResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/stats`, {
-    next: { revalidate: 60 },
-  });
+export async function getStats(): Promise<StatsResult> {
+  // Stats change whenever the scrape cron runs (~every 6h), and this page
+  // is already dynamic (see searchParams in app/page.tsx), so there's no
+  // reason to keep a time-based cache here — a stale/empty snapshot from a
+  // bad request would otherwise linger in Next.js's persistent fetch cache
+  // for the full revalidate window instead of self-healing immediately.
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/stats`, {
+      cache: "no-store",
+    });
 
-  if (!res.ok) {
-    throw new Error(`Gagal memuat statistik (${res.status})`);
+    if (!res.ok) return { status: "error" };
+
+    const data = await res.json();
+
+    const bySource: SourceStat[] = Array.isArray(data.by_source)
+      ? data.by_source.map((item: Record<string, unknown>) => ({
+          source: String(item.name ?? item.source ?? item.slug ?? ""),
+          count: Number(item.active_jobs ?? item.count ?? item.total ?? 0),
+        }))
+      : [];
+
+    const byStack: StackStat[] = Array.isArray(data.by_stack)
+      ? data.by_stack.map((item: Record<string, unknown>) => ({
+          stack: String(item.stack ?? item.name ?? ""),
+          count: Number(item.job_count ?? item.count ?? item.total ?? 0),
+        }))
+      : [];
+
+    return {
+      status: "ok",
+      data: {
+        total_active: Number(data.total_active ?? 0),
+        by_source: bySource,
+        by_stack: byStack,
+      },
+    };
+  } catch {
+    return { status: "error" };
   }
-
-  const data = await res.json();
-
-  const bySource: SourceStat[] = Array.isArray(data.by_source)
-    ? data.by_source.map((item: Record<string, unknown>) => ({
-        source: String(item.name ?? item.source ?? item.slug ?? ""),
-        count: Number(item.active_jobs ?? item.count ?? item.total ?? 0),
-      }))
-    : [];
-
-  const byStack: StackStat[] = Array.isArray(data.by_stack)
-    ? data.by_stack.map((item: Record<string, unknown>) => ({
-        stack: String(item.stack ?? item.name ?? ""),
-        count: Number(item.job_count ?? item.count ?? item.total ?? 0),
-      }))
-    : [];
-
-  return {
-    total_active: Number(data.total_active ?? 0),
-    by_source: bySource,
-    by_stack: byStack,
-  };
 }

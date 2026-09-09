@@ -43,8 +43,10 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export function JobFiltersForm({
   availableStack,
+  stackStatus,
 }: {
   availableStack: StackStat[];
+  stackStatus: "ok" | "empty" | "error";
 }) {
   const [filters, setFilters] = useJobFilters();
 
@@ -147,8 +149,15 @@ export function JobFiltersForm({
               </div>
             );
           })}
-          {availableStack.length === 0 && (
-            <p className="text-xs text-muted-foreground">Tidak ada data.</p>
+          {stackStatus === "error" && (
+            <p className="text-xs text-destructive">
+              Gagal memuat daftar teknologi. Filter lain tetap bisa dipakai.
+            </p>
+          )}
+          {stackStatus === "empty" && (
+            <p className="text-xs text-muted-foreground">
+              Belum ada data teknologi untuk loker saat ini.
+            </p>
           )}
         </div>
       </div>

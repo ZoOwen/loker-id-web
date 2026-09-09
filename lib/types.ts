@@ -46,6 +46,10 @@ export interface StatsResponse {
   by_stack: StackStat[];
 }
 
+export type StatsResult =
+  | { status: "ok"; data: StatsResponse }
+  | { status: "error" };
+
 export interface JobFilters {
   stack: string[];
   salary_min: number | null;

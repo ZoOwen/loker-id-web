@@ -15,6 +15,9 @@ import {
   formatSourceName,
 } from "@/lib/format";
 
+// Job data changes as the scrape cron re-runs; never serve a static snapshot.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

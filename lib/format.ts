@@ -25,9 +25,16 @@ function formatJuta(value: number): string {
 }
 
 export function formatSalary(
-  min: number | null | undefined,
-  max: number | null | undefined
+  minInput: number | null | undefined,
+  maxInput: number | null | undefined
 ): string | null {
+  // Scraped salaries are sometimes junk (0, or a few hundred thousand
+  // rupiah instead of a monthly salary). Anything under Rp 1jt isn't a
+  // plausible monthly salary, so treat it as missing rather than show it.
+  const MIN_PLAUSIBLE_SALARY = 1_000_000;
+  const min = minInput && minInput >= MIN_PLAUSIBLE_SALARY ? minInput : null;
+  const max = maxInput && maxInput >= MIN_PLAUSIBLE_SALARY ? maxInput : null;
+
   if (!min && !max) return null;
   if (min && max && min !== max) {
     return `Rp ${formatJuta(min)}–${formatJuta(max)} jt`;

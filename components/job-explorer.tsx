@@ -22,10 +22,12 @@ export function JobExplorer({
   initialJobs,
   initialNextCursor,
   availableStack,
+  stackStatus,
 }: {
   initialJobs: Job[];
   initialNextCursor: string | null;
   availableStack: StackStat[];
+  stackStatus: "ok" | "empty" | "error";
 }) {
   const [filters] = useJobFilters();
   const filtersKey = JSON.stringify(filters);
@@ -100,7 +102,7 @@ export function JobExplorer({
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
       <aside className="hidden lg:block">
-        <JobFiltersForm availableStack={availableStack} />
+        <JobFiltersForm availableStack={availableStack} stackStatus={stackStatus} />
       </aside>
 
       <div className="flex flex-col gap-4">
@@ -115,7 +117,7 @@ export function JobExplorer({
                 <SheetTitle>Filter loker</SheetTitle>
               </SheetHeader>
               <div className="mt-2">
-                <JobFiltersForm availableStack={availableStack} />
+                <JobFiltersForm availableStack={availableStack} stackStatus={stackStatus} />
               </div>
             </SheetContent>
           </Sheet>
