@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   },
   description:
     "Kumpulan lowongan kerja developer di Indonesia dari berbagai sumber, dengan filter stack, gaji, mode kerja, dan level.",
+  verification: {
+    google: "-ZHb47nlVaRj6rHxnyb90qokZMpxGOg0NZhf35KnVYo",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
