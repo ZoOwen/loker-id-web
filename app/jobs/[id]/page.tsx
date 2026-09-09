@@ -14,6 +14,8 @@ import {
   formatSalary,
   formatSourceName,
 } from "@/lib/format";
+import { buildJobPostingSchema } from "@/lib/job-posting-schema";
+import { SITE_URL } from "@/lib/site";
 
 // Job data changes as the scrape cron re-runs; never serve a static snapshot.
 export const dynamic = "force-dynamic";
@@ -28,9 +30,21 @@ export async function generateMetadata({
 
   if (!job) return { title: "Loker tidak ditemukan" };
 
+  const title = `${job.title} di ${job.company} — Loker.id`;
+  const description = job.description.slice(0, 155);
+  const url = `${SITE_URL}/jobs/${job.id}`;
+
   return {
-    title: `${job.title} di ${job.company}`,
-    description: job.description.slice(0, 160),
+    title: { absolute: title },
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Loker.id",
+      type: "website",
+    },
   };
 }
 
@@ -49,9 +63,15 @@ export default async function JobDetailPage({
   const level = formatLevel(job.level);
   const location = job.location_city ?? job.location;
   const sourceName = formatSourceName(job.source_url);
+  const jobPostingSchema = buildJobPostingSchema(job);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingSchema) }}
+      />
+
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

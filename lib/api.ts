@@ -38,12 +38,24 @@ export function buildJobsSearchParams(
 
 export async function getJobs(
   filters: Partial<JobFilters>,
-  opts?: { cursor?: string | null; limit?: number; signal?: AbortSignal }
+  opts?: {
+    cursor?: string | null;
+    limit?: number;
+    signal?: AbortSignal;
+    // Omit for the default (always fresh, no persistent cache). Pass a
+    // number of seconds only for pages that intentionally trade some
+    // staleness for static generation (see app/stack/[slug]/page.tsx) —
+    // never leave this unset-but-cached, that's the bug we shipped once
+    // already (see getStats below).
+    revalidate?: number;
+  }
 ): Promise<JobsResponse> {
   const params = buildJobsSearchParams(filters, opts);
   const res = await fetch(`${API_BASE_URL}/api/jobs?${params.toString()}`, {
-    cache: "no-store",
     signal: opts?.signal,
+    ...(opts?.revalidate != null
+      ? { next: { revalidate: opts.revalidate } }
+      : { cache: "no-store" as const }),
   });
 
   if (!res.ok) {
@@ -55,6 +67,24 @@ export async function getJobs(
     jobs: Array.isArray(data.jobs) ? (data.jobs as Job[]) : [],
     next_cursor: data.next_cursor ?? null,
   };
+}
+
+const SITEMAP_JOB_CAP = 1000;
+
+// For sitemap generation: pages through active jobs (the backend caps
+// `limit` at 100 regardless of what's requested), up to SITEMAP_JOB_CAP.
+export async function getAllJobs(): Promise<Job[]> {
+  const all: Job[] = [];
+  let cursor: string | null = null;
+
+  while (all.length < SITEMAP_JOB_CAP) {
+    const res = await getJobs({}, { cursor, limit: 100 });
+    all.push(...res.jobs);
+    if (!res.next_cursor) break;
+    cursor = res.next_cursor;
+  }
+
+  return all;
 }
 
 // For use in Client Components: the backend doesn't send CORS headers, so
@@ -97,15 +127,19 @@ export async function getJob(id: string): Promise<JobDetail | null> {
   };
 }
 
-export async function getStats(): Promise<StatsResult> {
-  // Stats change whenever the scrape cron runs (~every 6h), and this page
-  // is already dynamic (see searchParams in app/page.tsx), so there's no
-  // reason to keep a time-based cache here — a stale/empty snapshot from a
-  // bad request would otherwise linger in Next.js's persistent fetch cache
-  // for the full revalidate window instead of self-healing immediately.
+export async function getStats(opts?: {
+  revalidate?: number;
+}): Promise<StatsResult> {
+  // Default is always-fresh (no-store): stats change whenever the scrape
+  // cron runs (~every 6h), and most pages calling this are already dynamic,
+  // so a persistent cache here just risks serving a stale/empty snapshot
+  // indefinitely instead of self-healing. Pass `revalidate` only for pages
+  // that intentionally trade staleness for static generation.
   try {
     const res = await fetch(`${API_BASE_URL}/api/stats`, {
-      cache: "no-store",
+      ...(opts?.revalidate != null
+        ? { next: { revalidate: opts.revalidate } }
+        : { cache: "no-store" as const }),
     });
 
     if (!res.ok) return { status: "error" };

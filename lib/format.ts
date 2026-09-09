@@ -24,16 +24,27 @@ function formatJuta(value: number): string {
   return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
 }
 
+// Scraped salaries are sometimes junk (0, or a few hundred thousand rupiah
+// instead of a monthly salary). Anything under Rp 1jt isn't a plausible
+// monthly salary, so treat it as missing. Shared by the UI badge and the
+// JobPosting JSON-LD so a bad value can't leak into either.
+const MIN_PLAUSIBLE_SALARY = 1_000_000;
+
+export function getValidSalaryRange(
+  minInput: number | null | undefined,
+  maxInput: number | null | undefined
+): { min: number | null; max: number | null } {
+  return {
+    min: minInput && minInput >= MIN_PLAUSIBLE_SALARY ? minInput : null,
+    max: maxInput && maxInput >= MIN_PLAUSIBLE_SALARY ? maxInput : null,
+  };
+}
+
 export function formatSalary(
   minInput: number | null | undefined,
   maxInput: number | null | undefined
 ): string | null {
-  // Scraped salaries are sometimes junk (0, or a few hundred thousand
-  // rupiah instead of a monthly salary). Anything under Rp 1jt isn't a
-  // plausible monthly salary, so treat it as missing rather than show it.
-  const MIN_PLAUSIBLE_SALARY = 1_000_000;
-  const min = minInput && minInput >= MIN_PLAUSIBLE_SALARY ? minInput : null;
-  const max = maxInput && maxInput >= MIN_PLAUSIBLE_SALARY ? maxInput : null;
+  const { min, max } = getValidSalaryRange(minInput, maxInput);
 
   if (!min && !max) return null;
   if (min && max && min !== max) {

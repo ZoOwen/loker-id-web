@@ -19,6 +19,7 @@ export interface Job {
   level: JobLevel | null;
   source_url: string;
   posted_at: string;
+  last_seen_at?: string;
 }
 
 export interface JobDetail extends Job {
